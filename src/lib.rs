@@ -1,12 +1,8 @@
 #![no_std]
 
-//! Stepper motor speed ramp generator.
-//!
-//! # Numbers
-//!
-//! In few APIs, stepgen keeps numbers as fixed-point numbers, using least significant 8 bits
-//! for the fractional part and the remaining bits for the integral part.
-//!
+//! Stepper motor speed ramp generator. Given acceleration, target speed and target step to stop
+//! at, generates acceleration or deceleration profile for the stepper motor, in the form of delays
+//! between steps.
 //!
 //! # Examples
 //! ```
@@ -25,10 +21,16 @@
 //!
 //! assert_eq!(99, stepper.current_step());
 //! assert_eq!(113621, stepper.current_speed());
-//! assert_eq!(2242, (stepper.next() + 128) >> 8); // 100th step, round from 16.8
+//! assert_eq!(2242, (stepper.next() + 128) >> 8); // delay for 100th step, rounded to nearest integer
 //! ```
+//! ## Note on numbers
+//!
+//! In few APIs, stepgen keeps numbers as fixed-point numbers, using least significant 8 bits
+//! for the fractional part and the remaining bits for the integral part.
+//!
+//!
 //! ## Links
-//! (Generate stepper-motor speed profiles in real time)[http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time]
+//! [1] [Generate stepper-motor speed profiles in real time](http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time)
 
 
 // How many timer ticks it would take for one update (rough estimate), to make sure we are not

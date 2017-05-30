@@ -42,7 +42,7 @@ fn test2() {
 }
 
 fn run_test(path: &Path, target_step: u32, microsteps: u32, stop_at: u32) {
-    let mut stepgen = stepgen::new(FREQUENCY);
+    let mut stepgen = stepgen::Stepgen::new(FREQUENCY);
     stepgen.set_target_step(target_step);
     stepgen.set_acceleration((1000 * microsteps) << 8);
     stepgen.set_target_speed((800 * microsteps) << 8);

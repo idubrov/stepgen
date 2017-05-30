@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(const_fn)]
 
 //! Stepper motor speed ramp generator. Given acceleration, target speed and target step to stop
 //! at, generates acceleration or deceleration profile for the stepper motor, in the form of delays
@@ -6,13 +7,12 @@
 //!
 //! # Examples
 //! ```
-//! use stepgen::{new};
-//! let mut stepper = new(1_000_000);
+//! use stepgen::Stepgen;
+//! let mut stepper = Stepgen::new(1_000_000);
 //!
 //! stepper.set_acceleration(1000 << 8); // 1200 steps per second per second
 //! stepper.set_target_step(1000); // stop at step 1000
 //! stepper.set_target_speed(800 << 8); // 240RPM (4 turns per second)
-//! println!("First delay {}", stepper.first_delay);
 //!
 //! // Take 99 steps
 //! for _ in 0..99 {
@@ -61,20 +61,6 @@ pub struct Stepgen {
     target_delay: u32,
 }
 
-pub fn new(ticks_per_second: u32) -> Stepgen {
-    Stepgen {
-        current_step: 0,
-        speed: 0,
-        delay: 0,
-        slewing_delay: 0,
-        ticks_per_second: ticks_per_second,
-        first_delay: 0,
-        target_step: 0,
-        target_delay: 0,
-    }
-}
-
-
 /// This function computes square root of an `u64` number.
 fn u64sqrt(x0: u64) -> u64 {
     let mut x = x0;
@@ -96,6 +82,20 @@ fn u64sqrt(x0: u64) -> u64 {
 }
 
 impl Stepgen {
+    pub const fn new(ticks_per_second: u32) -> Stepgen {
+        Stepgen {
+            current_step: 0,
+            speed: 0,
+            delay: 0,
+            slewing_delay: 0,
+            ticks_per_second: ticks_per_second,
+            first_delay: 0,
+            target_step: 0,
+            target_delay: 0,
+        }
+    }
+
+
     // Configuration methods. Should not be called while motor is running.
 
     /// Set stepper motor acceleration, in steps per second per second (in 16.8 format).
@@ -105,10 +105,10 @@ impl Stepgen {
     /// # Examples
     ///
     /// ```
-    /// use stepgen::{new};
-    /// let mut x = new(1_000_000);
+    /// use stepgen::Stepgen;
+    /// let mut stepgen = Stepgen::new(1_000_000);
     ///
-    /// x.set_acceleration(1200 << 8);
+    /// stepgen.set_acceleration(1200 << 8);
     /// ```
     pub fn set_acceleration(&mut self, acceleration: u32) {
         // c0 = F*sqrt(2/a)*.676 = F*sqrt(2/a)*676/1000 =

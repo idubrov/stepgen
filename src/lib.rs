@@ -1,18 +1,23 @@
 #![no_std]
 #![feature(const_fn)]
 
-//! Stepper motor speed ramp generator. Given acceleration, target speed and target step to stop
+//! Stepper motor speed ramp generator.
+//!
+//! Given acceleration, target speed and target step to stop
 //! at, generates acceleration or deceleration profile for the stepper motor, in the form of delays
 //! between steps.
+//!
+//! Uses algorithm from "[Generate stepper-motor speed pro les in real time][1]" paper by David Austin.
 //!
 //! # Examples
 //! ```
 //! use stepgen::Stepgen;
+//!
 //! let mut stepper = Stepgen::new(1_000_000);
 //!
-//! stepper.set_acceleration(1000 << 8); // 1200 steps per second per second
+//! stepper.set_acceleration(1000 << 8).unwrap(); // 1200 steps per second per second
 //! stepper.set_target_step(1000); // stop at step 1000
-//! stepper.set_target_speed(800 << 8); // 240RPM (4 turns per second)
+//! stepper.set_target_speed(800 << 8).unwrap(); // 240RPM (4 turns per second)
 //!
 //! // Take 99 steps
 //! for _ in 0..99 {
@@ -30,14 +35,22 @@
 //!
 //!
 //! ## Links
-//! [1] [Generate stepper-motor speed profiles in real time](http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time)
+//! [1]: http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time
 
+
+#[derive(Debug, PartialEq)]
+pub enum Error {
+    TooSlow,
+    TooFast,
+}
+
+pub type Result = core::result::Result<(), Error>;
 
 // How many timer ticks it would take for one update (rough estimate), to make sure we are not
 // running too fast so we cannot update the ticker
 const TICKS_PER_UPDATE: u32 = 10;
 
-/// Uses algorithm from "Generate stepper-motor speed pro les in real time" paper by David Austin.
+#[derive(Debug)]
 pub struct Stepgen {
     // Current step
     current_step: u32,
@@ -108,9 +121,24 @@ impl Stepgen {
     /// use stepgen::Stepgen;
     /// let mut stepgen = Stepgen::new(1_000_000);
     ///
-    /// stepgen.set_acceleration(1200 << 8);
+    /// stepgen.set_acceleration(1200 << 8).unwrap();
     /// ```
-    pub fn set_acceleration(&mut self, acceleration: u32) {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if acceleration is too slow (first delay does not fit into 16.8).
+    ///
+    /// Too slow:
+    ///
+    /// ```
+    /// use stepgen::{Stepgen, Error};
+    ///
+    /// let mut stepper = Stepgen::new(1_000_000);
+    ///
+    /// // 1 step per second per second -- too slow!
+    /// assert_eq!(Error::TooSlow, stepper.set_acceleration(1 << 8).unwrap_err());
+    /// ```
+    pub fn set_acceleration(&mut self, acceleration: u32) -> Result {
         // c0 = F*sqrt(2/a)*.676 = F*sqrt(2/a)*676/1000 =
         //      F*sqrt(2*676*676/a)/1000 =
         //      F*sqrt(2*676*676*1^16)/(1000*1^8)
@@ -123,10 +151,11 @@ impl Stepgen {
         let c0: u64 = ((self.ticks_per_second as u64) * u64sqrt(c0long) / 1000) >> 8;
         if (c0 >> 24) != 0 {
             // Doesn't fit in 16.8 format, our timer is only 16 bit.
-            panic!("Acceleration is too slow!");
+            return Err(Error::TooSlow);
         }
         // Convert to 16.16 format. We only need this precision during intermediate calculations.
         self.first_delay = (c0 as u32) << 8;
+        Ok(())
     }
 
     /// Set destination step for the stepper motor pulse generator. This is one of the two methods
@@ -144,21 +173,46 @@ impl Stepgen {
     /// motor would only reach this speed if target step is far enough, so there is
     /// enough space for acceleration/deceleration.
     ///
-    /// # Panics
-    /// Panics if target speed is too low or too fast
-    pub fn set_target_speed(&mut self, target_speed: u32) {
+    /// # Errors
+    ///
+    /// Returns an error if target speed is either too slow (first delay does not fit into 16.8) or
+    /// too fast (first delay is shorter than `TICKS_PER_UPDATE`).
+    ///
+    /// Too slow:
+    ///
+    /// ```
+    /// use stepgen::{Stepgen, Error};
+    ///
+    /// let mut stepper = Stepgen::new(1_000_000);
+    ///
+    /// // 1 step per second per second -- too slow!
+    /// assert_eq!(Error::TooSlow, stepper.set_target_speed(1 << 8).unwrap_err());
+    /// ```
+    ///
+    /// Too fast:
+    ///
+    /// ```
+    /// use stepgen::{Stepgen, Error};
+    ///
+    /// let mut stepper = Stepgen::new(1_000_000);
+    ///
+    /// // 1_000_000 step per second per second -- too slow!
+    /// assert_eq!(Error::TooFast, stepper.set_target_speed(1_000_000 << 8).unwrap_err());
+    /// ```
+    pub fn set_target_speed(&mut self, target_speed: u32) -> Result {
         let delay = ((self.ticks_per_second as u64) << 16) / (target_speed as u64);
         if (delay >> 24) != 0 {
             // Too slow, doesn't fit in in 16.8 format, our timer is only 16 bit.
-            panic!("Speed it too low!");
+            return Err(Error::TooSlow);
         }
         if delay <= (TICKS_PER_UPDATE as u64) * (1 << 8) {
             // Too fast, less than 10 ticks of a timer. 10 is an arbitrary number,
             // just to make sure we have enough time to calculate next delay.
-            panic!("Speed it too fast!");
+            return Err(Error::TooFast);
         }
         // Convert to 16.16 format. We only need this precision during intermediate calculations.
         self.target_delay = (delay as u32) << 8;
+        Ok(())
     }
 
     pub fn current_step(&self) -> u32 {

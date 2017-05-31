@@ -327,6 +327,17 @@ impl Stepgen {
     }
 }
 
+impl Iterator for Stepgen {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match Stepgen::next(self) {
+            0 => None,
+            v => Some(v)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

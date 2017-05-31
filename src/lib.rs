@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(const_fn)]
+#![warn(missing_docs)]
 
 //! Stepper motor speed ramp generator.
 //!
@@ -38,18 +39,25 @@
 //! [1]: http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time
 
 
+/// Error code for some of the stepgen operations.
 #[derive(Debug, PartialEq)]
 pub enum Error {
+    /// Requested parameter (acceleration or speed) is too slow -- delay is too long and does not
+    /// fit in 16.8 format.
     TooSlow,
+
+    /// Requested speed is too fast -- delay is to short for the MCU to process it timely.
     TooFast,
 }
 
+/// Result type for some of the stepgen operations.
 pub type Result = core::result::Result<(), Error>;
 
 // How many timer ticks it would take for one update (rough estimate), to make sure we are not
 // running too fast so we cannot update the ticker
 const TICKS_PER_UPDATE: u32 = 10;
 
+/// State of the stepgen.
 #[derive(Debug)]
 pub struct Stepgen {
     // Current step
@@ -95,6 +103,9 @@ fn u64sqrt(x0: u64) -> u64 {
 }
 
 impl Stepgen {
+    /// Create new copy of stepgen. `ticks_per_second` defines size of each tick stepgen operates.
+    /// All settings (acceleration, speed) and current parameters (speed) are defined in terms of
+    /// these ticks.
     pub const fn new(ticks_per_second: u32) -> Stepgen {
         Stepgen {
             current_step: 0,
@@ -215,10 +226,14 @@ impl Stepgen {
         Ok(())
     }
 
+    /// Current step stepgen is at.
     pub fn current_step(&self) -> u32 {
         self.current_step
     }
 
+    /// Target step stepgen should stop at. Note that if stepper is running too fast, it might not
+    /// be able to stop exactly at this step. This could happen when target step is updated after
+    /// stepper motor accelerated to certain speed.
     pub fn target_step(&self) -> u32 {
         self.target_step
     }

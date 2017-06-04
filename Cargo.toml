@@ -2,7 +2,7 @@
 authors = ["Ivan Dubrov <dubrov.ivan@gmail.com>"]
 description = "Stepper motor speed ramp generator"
 name = "stepgen"
-version = "0.1.0"
+version = "0.1.1-pre"
 
 [dev-dependencies]
 regex = "0.2"

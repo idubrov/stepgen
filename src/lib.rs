@@ -159,8 +159,8 @@ impl Stepgen {
         // We shift 24 bits to the left to adjust for acceleration in 24.8 format plus to convert
         // result into 24.8 format, so the resulting shift is 40 bits.
         // 676 is used to correct for the first step (see the linked paper)
-        let c0long: u64 = ((2u64 * 676 * 676) << 40) / (acceleration as u64);
-        let c0: u64 = ((self.ticks_per_second as u64) * u64sqrt(c0long) / 1000) >> 8;
+        let c0long: u64 = ((2u64 * 676 * 676) << 40) / u64::from(acceleration);
+        let c0: u64 = (u64::from(self.ticks_per_second) * u64sqrt(c0long) / 1000) >> 8;
         if (c0 >> 24) != 0 {
             // Doesn't fit in 16.8 format, our timer is only 16 bit.
             return Err(Error::TooSlow);
@@ -212,12 +212,12 @@ impl Stepgen {
     /// assert_eq!(Error::TooFast, stepper.set_target_speed(1_000_000 << 8).unwrap_err());
     /// ```
     pub fn set_target_speed(&mut self, target_speed: u32) -> Result {
-        let delay = ((self.ticks_per_second as u64) << 16) / (target_speed as u64);
+        let delay = (u64::from(self.ticks_per_second) << 16) / u64::from(target_speed);
         if (delay >> 24) != 0 {
             // Too slow, doesn't fit in in 16.8 format, our timer is only 16 bit.
             return Err(Error::TooSlow);
         }
-        if delay <= (TICKS_PER_UPDATE as u64) * (1 << 8) {
+        if delay <= u64::from(TICKS_PER_UPDATE) * (1 << 8) {
             // Too fast, less than 10 ticks of a timer. 10 is an arbitrary number,
             // just to make sure we have enough time to calculate next delay.
             return Err(Error::TooFast);
@@ -244,15 +244,15 @@ impl Stepgen {
         let delay = if self.slewing_delay != 0 { self.slewing_delay } else { self.delay };
         let delay = delay >> 8; // Convert to 16.8 format
         if delay != 0 {
-            let speed = ((self.ticks_per_second as u64) << 16) / (delay as u64);
-            return speed as u32;
+            let speed = (u64::from(self.ticks_per_second) << 16) / u64::from(delay);
+            speed as u32
         } else {
             0
         }
     }
 
     /// Returns '0' if should stop. Otherwise, returns timer delay in 24.8 format
-    pub fn next(&mut self) -> u32 {
+    fn next_delay(&mut self) -> u32 {
         let target_step = self.target_step;
         let target_delay = self.target_delay;
         let st = self.current_step;
@@ -311,7 +311,7 @@ impl Stepgen {
         // If slewing, return slew delay. delay should be close enough, but could
         // be different due to the accumulated rounding errors
         let d = if self.slewing_delay != 0 { self.slewing_delay } else { self.delay };
-        return d >> 8; // Convert to 16.8 format
+        d >> 8 // Convert to 16.8 format
     }
 
 
@@ -332,7 +332,7 @@ impl Iterator for Stepgen {
     type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match Stepgen::next(self) {
+        match Stepgen::next_delay(self) {
             0 => None,
             v => Some(v)
         }

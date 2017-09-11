@@ -1,8 +1,15 @@
 [package]
 authors = ["Ivan Dubrov <dubrov.ivan@gmail.com>"]
+categories = ["embedded", "no-std"]
 description = "Stepper motor speed ramp generator"
+repository = "https://github.com/idubrov/stepgen"
 name = "stepgen"
 version = "0.1.1-pre"
+license = "MIT OR Apache-2.0"
+
+exclude = [
+    "docs/*"
+]
 
 [dev-dependencies]
 regex = "0.2"

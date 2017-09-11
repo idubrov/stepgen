@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(const_fn)]
 #![warn(missing_docs)]
+#![deny(warnings)]
 
 //! Stepper motor speed ramp generator.
 //!

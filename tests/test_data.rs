@@ -2,9 +2,6 @@
 
 extern crate stepgen;
 extern crate regex;
-#[macro_use]
-extern crate pretty_assertions;
-
 
 use regex::{Regex, Captures};
 use std::fs;
@@ -30,7 +27,6 @@ fn test() {
 
         let file_name = path.file_name();
         let file_name = file_name.to_str().unwrap();
-        println!("Running test: {}", file_name);
 
         let re = Regex::new(r"^(?P<ts>\d+)(_(?P<m>\d+)(_(?P<sa>\d+))?)?$").unwrap();
         let caps = match re.captures(file_name) {
@@ -42,6 +38,7 @@ fn test() {
         let microsteps = param(&caps, "m", 1);
         let stop_at = param(&caps, "sa", std::usize::MAX);
 
+        println!("Running test ({}): target={}, microsteps={}, stop_at={}", file_name, target_step, microsteps, stop_at);
         run_test(&path.path(), target_step, microsteps, stop_at);
     }
 }
@@ -71,5 +68,7 @@ fn run_test(path: &Path, target_step: u32, microsteps: u32, stop_at: usize) {
     let file = BufReader::new(&file);
     let expected: Vec<String> = file.lines().map(|l| l.unwrap()).collect();
     let actual = to_vector(stepgen, stop_at);
-    assert_eq!(actual, expected);
+    if actual != expected {
+        panic!("assertion failed, got output:\n{}", actual.join("\n"));
+    }
 }

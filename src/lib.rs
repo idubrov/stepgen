@@ -179,8 +179,8 @@ impl Stepgen {
         self.target_step = target_step;
     }
 
-    /// Set slew speed (maximum speed stepper motor would run). Note that stepper
-    /// motor would only reach this speed if target step is far enough, so there is
+    /// Set slew speed (maximum speed stepper motor would run), in steps per second. Note that
+    /// stepper motor would only reach this speed if target step is far enough, so there is
     /// enough space for acceleration/deceleration.
     ///
     /// # Errors
@@ -195,7 +195,7 @@ impl Stepgen {
     ///
     /// let mut stepper = Stepgen::new(1_000_000);
     ///
-    /// // 1 step per second per second -- too slow!
+    /// // 1 step per second -- too slow!
     /// assert_eq!(Error::TooSlow, stepper.set_target_speed(1 << 8).unwrap_err());
     /// ```
     ///
@@ -206,7 +206,7 @@ impl Stepgen {
     ///
     /// let mut stepper = Stepgen::new(1_000_000);
     ///
-    /// // 1_000_000 step per second per second -- too slow!
+    /// // 1_000_000 step per second per second -- too fast!
     /// assert_eq!(Error::TooFast, stepper.set_target_speed(1_000_000 << 8).unwrap_err());
     /// ```
     pub fn set_target_speed(&mut self, target_speed: u32) -> Result {

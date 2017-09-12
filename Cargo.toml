@@ -14,5 +14,8 @@ exclude = [
     "docs/*"
 ]
 
+[dev-dependencies.pretty_assertions]
+version = "0.3.4"
+
 [dev-dependencies]
 regex = "0.2"

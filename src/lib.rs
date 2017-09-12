@@ -28,7 +28,7 @@
 //!
 //! assert_eq!(99, stepper.current_step());
 //! assert_eq!(113621, stepper.current_speed());
-//! assert_eq!(2242, (stepper.next() + 128) >> 8); // delay for 100th step, rounded to nearest integer
+//! assert_eq!(2242, (stepper.next().unwrap() + 128) >> 8); // delay for 100th step, rounded to nearest integer
 //! ```
 //! ## Note on numbers
 //!

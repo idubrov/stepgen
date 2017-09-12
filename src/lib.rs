@@ -35,8 +35,6 @@
 //! In few APIs, stepgen keeps numbers as fixed-point numbers, using least significant 8 bits
 //! for the fractional part and the remaining bits for the integral part.
 //!
-//!
-//! ## Links
 //! [1]: http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time
 
 

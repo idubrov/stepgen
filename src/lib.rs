@@ -415,6 +415,8 @@ mod tests {
         stepgen.set_acceleration(1000 << 8).unwrap();
         stepgen.set_target_step(core::u32::MAX);
 
+        assert_eq!(0, stepgen.current_speed());
+
         assert_eq!(30232, round(stepgen.next().unwrap()));
         assert_eq!(18139, round(stepgen.next().unwrap()));
         assert_eq!(14108, round(stepgen.next().unwrap()));
@@ -425,9 +427,11 @@ mod tests {
         assert_eq!(14108, round(stepgen.next().unwrap()));
         assert_eq!(18139, round(stepgen.next().unwrap()));
         assert_eq!(20000, round(stepgen.next().unwrap())); // 20000 = 1_000_000 / 50
+        assert_eq!(50 << 8, stepgen.current_speed());
 
         // Slow a little bit more
         stepgen.set_target_speed(40 << 8).unwrap();
         assert_eq!(25000, round(stepgen.next().unwrap())); // 25000 = 1_000_000 / 40
+        assert_eq!(40 << 8, stepgen.current_speed());
     }
 }

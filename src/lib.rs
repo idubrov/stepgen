@@ -111,7 +111,7 @@ impl Stepgen {
             speed: 0,
             delay: 0,
             slewing_delay: 0,
-            ticks_per_second: ticks_per_second,
+            ticks_per_second,
             first_delay: 0,
             target_step: 0,
             target_delay: 0,
@@ -164,7 +164,12 @@ impl Stepgen {
             return Err(Error::TooSlow);
         }
         // Convert to 16.16 format. We only need this precision during intermediate calculations.
-        self.first_delay = (c0 as u32) << 8;
+        let first_delay = (c0 as u32) << 8;
+        if self.target_delay != 0 && self.target_delay > first_delay {
+            return Err(Error::TooFast);
+        }
+
+        self.first_delay = first_delay;
         Ok(())
     }
 
@@ -220,8 +225,15 @@ impl Stepgen {
             // just to make sure we have enough time to calculate next delay.
             return Err(Error::TooFast);
         }
+        // Cannot run slower than the first delay
+        let delay = (delay as u32) << 8;
+
+        // Check against acceleration, must be longer than the first delay
+        if self.first_delay != 0 && delay > self.first_delay {
+            return Err(Error::TooSlow);
+        }
         // Convert to 16.16 format. We only need this precision during intermediate calculations.
-        self.target_delay = (delay as u32) << 8;
+        self.target_delay = delay;
         Ok(())
     }
 
@@ -359,9 +371,35 @@ mod tests {
     }
 
     #[test]
+    fn acceleration_too_slow() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        assert_eq!(Err(Error::TooSlow), stepgen.set_acceleration(1 << 8));
+    }
+
+    #[test]
     fn too_slow() {
         let mut stepgen = Stepgen::new(FREQUENCY);
         assert_eq!(Err(Error::TooSlow), stepgen.set_target_speed(1 << 8));
+    }
+
+    #[test]
+    fn too_slow_acceleration() {
+        // Setting speed after acceleration
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_acceleration(1000 << 8).unwrap();
+        stepgen.set_target_speed(8468).unwrap();
+        assert_eq!(Err(Error::TooSlow), stepgen.set_target_speed(8467)); // Slowest speed with acceleration of 1000
+
+        // Setting acceleration after speed, but speed is OK
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_target_speed(8468).unwrap();
+        stepgen.set_acceleration(1000 << 8).unwrap();
+
+        // Setting acceleration after setting slow speed must also trigger an error
+        // (acceleration is too fast)
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_target_speed(8467).unwrap();
+        assert_eq!(Err(Error::TooFast), stepgen.set_acceleration(1000 << 8));
     }
 
     #[test]
@@ -383,9 +421,13 @@ mod tests {
         assert_eq!(11938, round(stepgen.next().unwrap()));
 
         // Update target speed, want to run slower
-        stepgen.set_target_speed(40 << 8).unwrap();
+        stepgen.set_target_speed(50 << 8).unwrap();
         assert_eq!(14108, round(stepgen.next().unwrap()));
         assert_eq!(18139, round(stepgen.next().unwrap()));
+        assert_eq!(20000, round(stepgen.next().unwrap())); // 20000 = 1_000_000 / 50
+
+        // Slow a little bit more
+        stepgen.set_target_speed(40 << 8).unwrap();
         assert_eq!(25000, round(stepgen.next().unwrap())); // 25000 = 1_000_000 / 40
     }
 }

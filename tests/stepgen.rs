@@ -36,21 +36,22 @@ fn test() {
 
         let target_step = param(&caps, "ts", 1);
         let microsteps = param(&caps, "m", 1);
-        let stop_at = param(&caps, "sa", std::usize::MAX);
+        let stop_at = param(&caps, "sa", std::u32::MAX);
 
         println!("Running test ({}): target={}, microsteps={}, stop_at={}", file_name, target_step, microsteps, stop_at);
         run_test(&path.path(), target_step, microsteps, stop_at);
     }
 }
 
-fn to_vector(mut stepgen: stepgen::Stepgen, stop_at: usize) -> Vec<String> {
+fn to_vector(mut stepgen: stepgen::Stepgen, stop_at: u32) -> Vec<String> {
     let formatter = |delay| format!("{}", (delay + 128) >> 8);
     let mut actual: Vec<String> = Vec::new();
-    for step in 0.. {
+    for step in 0u32.. {
         if step == stop_at {
             actual.push("Stopping".to_string());
             stepgen.set_target_step(0);
         }
+        assert_eq!(step, stepgen.current_step());
         match stepgen.next() {
             None => break,
             Some(delay) => actual.push(formatter(delay)),
@@ -59,11 +60,14 @@ fn to_vector(mut stepgen: stepgen::Stepgen, stop_at: usize) -> Vec<String> {
     actual
 }
 
-fn run_test(path: &Path, target_step: u32, microsteps: u32, stop_at: usize) {
+fn run_test(path: &Path, target_step: u32, microsteps: u32, stop_at: u32) {
     let mut stepgen = stepgen::Stepgen::new(FREQUENCY);
     stepgen.set_target_step(target_step);
     stepgen.set_acceleration((1000 * microsteps) << 8).unwrap();
     stepgen.set_target_speed((800 * microsteps) << 8).unwrap();
+
+    assert_eq!(target_step, stepgen.target_step());
+
     let file = File::open(path).unwrap();
     let file = BufReader::new(&file);
     let expected: Vec<String> = file.lines().map(|l| l.unwrap()).collect();

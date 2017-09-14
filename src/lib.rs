@@ -341,6 +341,12 @@ impl Iterator for Stepgen {
 mod tests {
     use super::*;
 
+    const FREQUENCY: u32 = 1_000_000; // Tests assume timer ticking at 1us (1Mhz)
+
+    fn round(delay: u32) -> u32 {
+        (delay + 128) >> 8
+    }
+
     #[test]
     fn sqrt_works() {
         assert_eq!(0, u64sqrt(0));
@@ -350,5 +356,36 @@ mod tests {
         assert_eq!(4, u64sqrt(15));
         assert_eq!(0x80_00_00_00u64, u64sqrt(0x4000_0000_0000_0000u64));
         assert_eq!(0x1_00_00_00_00u64, u64sqrt(0xffff_ffff_ffff_ffffu64));
+    }
+
+    #[test]
+    fn too_slow() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        assert_eq!(Err(Error::TooSlow), stepgen.set_target_speed(1 << 8));
+    }
+
+    #[test]
+    fn too_fast() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        assert_eq!(Err(Error::TooFast), stepgen.set_target_speed(1_000_000 << 8));
+    }
+
+    #[test]
+    fn slow_during_acceleration() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_target_speed(800 << 8).unwrap();
+        stepgen.set_acceleration(1000 << 8).unwrap();
+        stepgen.set_target_step(core::u32::MAX);
+
+        assert_eq!(30232, round(stepgen.next().unwrap()));
+        assert_eq!(18139, round(stepgen.next().unwrap()));
+        assert_eq!(14108, round(stepgen.next().unwrap()));
+        assert_eq!(11938, round(stepgen.next().unwrap()));
+
+        // Update target speed, want to run slower
+        stepgen.set_target_speed(40 << 8).unwrap();
+        assert_eq!(14108, round(stepgen.next().unwrap()));
+        assert_eq!(18139, round(stepgen.next().unwrap()));
+        assert_eq!(25000, round(stepgen.next().unwrap())); // 25000 = 1_000_000 / 40
     }
 }

@@ -1,6 +1,7 @@
 [![crates.io](https://img.shields.io/crates/v/stepgen.svg)](https://crates.io/crates/stepgen)
 [![crates.io](https://img.shields.io/crates/d/stepgen.svg)](https://crates.io/crates/stepgen)
-[![CircleCI](https://img.shields.io/circleci/project/github/idubrov/stepgen.svg)]()
+[![CircleCI](https://img.shields.io/circleci/project/github/idubrov/stepgen.svg)](https://circleci.com/gh/idubrov/stepgen)
+[![Codecov](https://img.shields.io/codecov/c/github/idubrov/stepgen.svg)](https://codecov.io/gh/idubrov/stepgen)
 
 # stepgen
 
@@ -29,7 +30,7 @@ for _ in 0..99 {
 
 assert_eq!(99, stepper.current_step());
 assert_eq!(113621, stepper.current_speed());
-assert_eq!(2242, (stepper.next() + 128) >> 8); // delay for 100th step, rounded to nearest integer
+assert_eq!(2242, (stepper.next().unwrap() + 128) >> 8); // delay for 100th step, rounded to nearest integer
 ```
 ### Note on numbers
 

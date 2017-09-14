@@ -7,10 +7,9 @@ name = "stepgen"
 version = "0.1.2-pre"
 license = "MIT/Apache-2.0"
 readme = "README.md"
-
-[package.metadata.release]
-pre-release-hook = "./update-readme.sh"
-
 exclude = [
     "docs/*"
 ]
+
+[package.metadata.release]
+pre-release-hook = "./update-readme.sh"

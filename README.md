@@ -25,7 +25,7 @@ stepper.set_target_speed(800 << 8).unwrap(); // 240RPM (4 turns per second)
 
 // Take 99 steps
 for _ in 0..99 {
-    stepper.next();
+    println!("{}", stepper.next().unwrap());
 }
 
 assert_eq!(99, stepper.current_step());

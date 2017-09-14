@@ -23,7 +23,7 @@
 //!
 //! // Take 99 steps
 //! for _ in 0..99 {
-//!     stepper.next();
+//!     println!("{}", stepper.next().unwrap());
 //! }
 //!
 //! assert_eq!(99, stepper.current_step());

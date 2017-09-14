@@ -1,9 +1,7 @@
 #![deny(warnings)]
 
 extern crate stepgen;
-extern crate regex;
 
-use regex::{Regex, Captures};
 use std::fs;
 use std::io::BufReader;
 use std::io::BufRead;
@@ -11,13 +9,6 @@ use std::fs::File;
 use std::path::Path;
 
 const FREQUENCY: u32 = 1_000_000; // Tests assume timer ticking at 1us (1Mhz)
-
-fn param<T: std::str::FromStr>(caps: &Captures, name: &str, default: T) -> T {
-    match caps.name(name) {
-        Some(m) => m.as_str().parse().unwrap_or(default),
-        None => default
-    }
-}
 
 #[test]
 fn test() {
@@ -28,15 +19,11 @@ fn test() {
         let file_name = path.file_name();
         let file_name = file_name.to_str().unwrap();
 
-        let re = Regex::new(r"^(?P<ts>\d+)(_(?P<m>\d+)(_(?P<sa>\d+))?)?$").unwrap();
-        let caps = match re.captures(file_name) {
-            None => { panic!("Invalid test file name: {}, should be <steps>[_<microsteps>[_<stop_at>]]", file_name) }
-            Some(c) => c
-        };
+        let params: Vec<u32> = file_name.split('_').map(|e| e.parse().unwrap()).collect();
 
-        let target_step = param(&caps, "ts", 1);
-        let microsteps = param(&caps, "m", 1);
-        let stop_at = param(&caps, "sa", std::u32::MAX);
+        let target_step = *params.get(0).unwrap_or(&1u32);
+        let microsteps = *params.get(1).unwrap_or(&1u32);
+        let stop_at = *params.get(2).unwrap_or(&std::u32::MAX);
 
         println!("Running test ({}): target={}, microsteps={}, stop_at={}", file_name, target_step, microsteps, stop_at);
         run_test(&path.path(), target_step, microsteps, stop_at);

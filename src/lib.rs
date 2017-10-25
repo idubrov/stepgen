@@ -18,8 +18,8 @@
 //! let mut stepper = Stepgen::new(1_000_000);
 //!
 //! stepper.set_acceleration(1000 << 8).unwrap(); // 1000 steps per second per second
-//! stepper.set_target_step(1000); // stop at step 1000
 //! stepper.set_target_speed(800 << 8).unwrap(); // 800 steps per second (4 turns per second)
+//! stepper.set_target_step(1000).unwrap(); // stop at step 1000
 //!
 //! // Take 99 steps
 //! for _ in 0..99 {
@@ -47,14 +47,16 @@ pub enum Error {
 
     /// Requested speed is too fast -- delay is to short for the MCU to process it timely.
     TooFast,
+
+    /// Speed or acceleration was not configured when step is set.
+    SpeedAccelerationNotSet
 }
 
 /// Result type for some of the stepgen operations.
 pub type Result = core::result::Result<(), Error>;
 
-// How many timer ticks it would take for one update (rough estimate), to make sure we are not
-// running too fast so we cannot update the ticker
-const TICKS_PER_UPDATE: u32 = 10;
+// Smallest delay we can handle without significant rounding errors
+const FASTEST_DELAY: u32 = 30;
 
 /// State of the stepgen.
 #[derive(Debug)]
@@ -172,11 +174,18 @@ impl Stepgen {
     /// to control the step generation (target step and target speed). If current step > target
     /// step, stepper motor would slow down until stop if running or stay stopped if not running.
     ///
+    /// # Errors
+    /// If speed or acceleration are not set, returns an error `Error::SpeedAccelerationNotSet`.
+    ///
     /// # Notes
     /// 1. Steps could only go in positive direction. Therefore, setting target step to 0 wil
     /// always force step generation to decelerate and stop.
-    pub fn set_target_step(&mut self, target_step: u32) {
+    pub fn set_target_step(&mut self, target_step: u32) -> Result {
+        if self.target_delay == 0 || self.first_delay == 0 {
+            return Err(Error::SpeedAccelerationNotSet);
+        }
         self.target_step = target_step;
+        Ok(())
     }
 
     /// Set slew speed (maximum speed stepper motor would run), in steps per second. Note that
@@ -219,7 +228,7 @@ impl Stepgen {
             // Too slow, doesn't fit in in 16.8 format, our timer is only 16 bit.
             return Err(Error::TooSlow);
         }
-        if delay <= u64::from(TICKS_PER_UPDATE) * (1 << 8) {
+        if delay <= u64::from(FASTEST_DELAY) * (1 << 8) {
             // Too fast, less than 10 ticks of a timer. 10 is an arbitrary number,
             // just to make sure we have enough time to calculate next delay.
             return Err(Error::TooFast);
@@ -399,7 +408,7 @@ mod tests {
         let mut stepgen = Stepgen::new(FREQUENCY);
         stepgen.set_acceleration(1000 << 8).unwrap();
         stepgen.set_target_speed(5120).unwrap(); // 20 pulses per second = 50_000 delay
-        stepgen.set_target_step(3);
+        stepgen.set_target_step(3).unwrap();
         assert!(stepgen.first_delay < stepgen.target_delay);
 
         // Walk three steps
@@ -418,7 +427,7 @@ mod tests {
         let mut stepgen = Stepgen::new(FREQUENCY);
         stepgen.set_target_speed(5120).unwrap();
         stepgen.set_acceleration(1000 << 8).unwrap();
-        stepgen.set_target_step(3);
+        stepgen.set_target_step(3).unwrap();
         assert!(stepgen.first_delay < stepgen.target_delay);
 
         // Walk three steps
@@ -442,7 +451,7 @@ mod tests {
         let mut stepgen = Stepgen::new(FREQUENCY);
         stepgen.set_target_speed(800 << 8).unwrap();
         stepgen.set_acceleration(1000 << 8).unwrap();
-        stepgen.set_target_step(core::u32::MAX);
+        stepgen.set_target_step(core::u32::MAX).unwrap();
 
         assert_eq!(0, stepgen.current_speed());
 
@@ -462,5 +471,19 @@ mod tests {
         stepgen.set_target_speed(40 << 8).unwrap();
         assert_eq!(25000, round(stepgen.next().unwrap())); // 25000 = 1_000_000 / 40
         assert_eq!(40 << 8, stepgen.current_speed());
+    }
+
+    #[test]
+    fn no_speed_set() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_acceleration(1000 << 8).unwrap();
+        assert_eq!(Err(Error::SpeedAccelerationNotSet), stepgen.set_target_step(1000_000_000));
+    }
+
+    #[test]
+    fn no_acceleration_set() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_target_speed(800 << 8).unwrap();
+        assert_eq!(Err(Error::SpeedAccelerationNotSet), stepgen.set_target_step(1000_000_000));
     }
 }

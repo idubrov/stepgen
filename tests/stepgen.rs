@@ -36,7 +36,7 @@ fn to_vector(mut stepgen: stepgen::Stepgen, stop_at: u32) -> Vec<String> {
     for step in 0u32.. {
         if step == stop_at {
             actual.push("Stopping".to_string());
-            stepgen.set_target_step(0);
+            stepgen.set_target_step(0).unwrap();
         }
         assert_eq!(step, stepgen.current_step());
         match stepgen.next() {
@@ -49,9 +49,9 @@ fn to_vector(mut stepgen: stepgen::Stepgen, stop_at: u32) -> Vec<String> {
 
 fn run_test(path: &Path, target_step: u32, microsteps: u32, stop_at: u32) {
     let mut stepgen = stepgen::Stepgen::new(FREQUENCY);
-    stepgen.set_target_step(target_step);
     stepgen.set_acceleration((1000 * microsteps) << 8).unwrap();
     stepgen.set_target_speed((800 * microsteps) << 8).unwrap();
+    stepgen.set_target_step(target_step).unwrap();
 
     assert_eq!(target_step, stepgen.target_step());
 

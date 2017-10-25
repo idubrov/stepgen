@@ -164,12 +164,7 @@ impl Stepgen {
             return Err(Error::TooSlow);
         }
         // Convert to 16.16 format. We only need this precision during intermediate calculations.
-        let first_delay = (c0 as u32) << 8;
-        if self.target_delay != 0 && self.target_delay > first_delay {
-            return Err(Error::TooFast);
-        }
-
-        self.first_delay = first_delay;
+        self.first_delay = (c0 as u32) << 8;
         Ok(())
     }
 
@@ -215,6 +210,10 @@ impl Stepgen {
     /// assert_eq!(Error::TooFast, stepper.set_target_speed(1_000_000 << 8).unwrap_err());
     /// ```
     pub fn set_target_speed(&mut self, target_speed: u32) -> Result {
+        if target_speed == 0 {
+            // Too slow, speed is zero
+            return Err(Error::TooSlow);
+        }
         let delay = (u64::from(self.ticks_per_second) << 16) / u64::from(target_speed);
         if (delay >> 24) != 0 {
             // Too slow, doesn't fit in in 16.8 format, our timer is only 16 bit.
@@ -225,15 +224,8 @@ impl Stepgen {
             // just to make sure we have enough time to calculate next delay.
             return Err(Error::TooFast);
         }
-        // Cannot run slower than the first delay
-        let delay = (delay as u32) << 8;
-
-        // Check against acceleration, must be longer than the first delay
-        if self.first_delay != 0 && delay > self.first_delay {
-            return Err(Error::TooSlow);
-        }
         // Convert to 16.16 format. We only need this precision during intermediate calculations.
-        self.target_delay = delay;
+        self.target_delay = (delay as u32) << 8;
         Ok(())
     }
 
@@ -282,10 +274,16 @@ impl Stepgen {
         self.current_step += 1;
 
         if self.speed == 0 {
-            // First step: load first delay, take the slower one
-            self.delay = if self.first_delay < target_delay { target_delay } else { self.first_delay };
-            self.speed = 1;
-            return self.delay >> 8; // Convert to 16.8 format
+            let d = if target_delay > self.first_delay {
+                // No acceleration is necessary -- just return the target delay
+                target_delay
+            } else {
+                // First step: load first delay, count as one acceleration step
+                self.delay = self.first_delay;
+                self.speed = 1;
+                self.delay
+            };
+            return d >> 8; // Convert to 16.8 format
         }
 
         // Calculate the projected step we would stop at if we start decelerating right now
@@ -383,23 +381,54 @@ mod tests {
     }
 
     #[test]
-    fn too_slow_acceleration() {
-        // Setting speed after acceleration
+    fn too_slow_2() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        stepgen.set_target_speed(3907).unwrap();
+        assert_eq!(Err(Error::TooSlow), stepgen.set_target_speed(3906));
+    }
+
+    #[test]
+    fn too_slow_zero() {
+        let mut stepgen = Stepgen::new(FREQUENCY);
+        assert_eq!(Err(Error::TooSlow), stepgen.set_target_speed(0));
+    }
+
+    #[test]
+    fn slower_than_first_step_after_accel() {
+        // Setting very slow speed after acceleration is OK
         let mut stepgen = Stepgen::new(FREQUENCY);
         stepgen.set_acceleration(1000 << 8).unwrap();
-        stepgen.set_target_speed(8468).unwrap();
-        assert_eq!(Err(Error::TooSlow), stepgen.set_target_speed(8467)); // Slowest speed with acceleration of 1000
+        stepgen.set_target_speed(5120).unwrap(); // 20 pulses per second = 50_000 delay
+        stepgen.set_target_step(3);
+        assert!(stepgen.first_delay < stepgen.target_delay);
 
-        // Setting acceleration after speed, but speed is OK
+        // Walk three steps
+        assert_eq!(50_000 << 8, stepgen.next().unwrap());
+        assert_eq!(0, stepgen.speed);
+        assert_eq!(50_000 << 8, stepgen.next().unwrap());
+        assert_eq!(0, stepgen.speed);
+        assert_eq!(50_000 << 8, stepgen.next().unwrap());
+        assert_eq!(0, stepgen.speed);
+        assert!(stepgen.next().is_none());
+    }
+
+    #[test]
+    fn slower_than_first_step_before_accel() {
+        // Setting acceleration after setting slow speed is also OK
         let mut stepgen = Stepgen::new(FREQUENCY);
-        stepgen.set_target_speed(8468).unwrap();
+        stepgen.set_target_speed(5120).unwrap();
         stepgen.set_acceleration(1000 << 8).unwrap();
+        stepgen.set_target_step(3);
+        assert!(stepgen.first_delay < stepgen.target_delay);
 
-        // Setting acceleration after setting slow speed must also trigger an error
-        // (acceleration is too fast)
-        let mut stepgen = Stepgen::new(FREQUENCY);
-        stepgen.set_target_speed(8467).unwrap();
-        assert_eq!(Err(Error::TooFast), stepgen.set_acceleration(1000 << 8));
+        // Walk three steps
+        assert_eq!(50_000 << 8, stepgen.next().unwrap());
+        assert_eq!(0, stepgen.speed);
+        assert_eq!(50_000 << 8, stepgen.next().unwrap());
+        assert_eq!(0, stepgen.speed);
+        assert_eq!(50_000 << 8, stepgen.next().unwrap());
+        assert_eq!(0, stepgen.speed);
+        assert!(stepgen.next().is_none());
     }
 
     #[test]

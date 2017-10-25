@@ -39,7 +39,7 @@
 
 
 /// Error code for some of the stepgen operations.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Error {
     /// Requested parameter (acceleration or speed) is too slow -- delay is too long and does not
     /// fit in 16.8 format.

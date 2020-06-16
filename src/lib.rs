@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(const_fn)]
 #![warn(missing_docs)]
 #![deny(warnings)]
 
@@ -477,13 +476,13 @@ mod tests {
     fn no_speed_set() {
         let mut stepgen = Stepgen::new(FREQUENCY);
         stepgen.set_acceleration(1000 << 8).unwrap();
-        assert_eq!(Err(Error::SpeedAccelerationNotSet), stepgen.set_target_step(1000_000_000));
+        assert_eq!(Err(Error::SpeedAccelerationNotSet), stepgen.set_target_step(1_000_000_000));
     }
 
     #[test]
     fn no_acceleration_set() {
         let mut stepgen = Stepgen::new(FREQUENCY);
         stepgen.set_target_speed(800 << 8).unwrap();
-        assert_eq!(Err(Error::SpeedAccelerationNotSet), stepgen.set_target_step(1000_000_000));
+        assert_eq!(Err(Error::SpeedAccelerationNotSet), stepgen.set_target_step(1_000_000_000));
     }
 }

@@ -10,6 +10,7 @@ readme = "README.md"
 exclude = [
     "docs/*"
 ]
+edition = "2018"
 
 [package.metadata.release]
 pre-release-hook = "./update-readme.sh"

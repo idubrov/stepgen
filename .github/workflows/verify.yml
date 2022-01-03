@@ -5,7 +5,6 @@ on:
       - main
   pull_request:
   workflow_dispatch:
-  workflow_call:
 jobs:
   verify:
     timeout-minutes: 5

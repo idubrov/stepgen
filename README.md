@@ -20,8 +20,8 @@ use stepgen::Stepgen;
 let mut stepper = Stepgen::new(1_000_000);
 
 stepper.set_acceleration(1000 << 8).unwrap(); // 1000 steps per second per second
-stepper.set_target_step(1000); // stop at step 1000
 stepper.set_target_speed(800 << 8).unwrap(); // 800 steps per second (4 turns per second)
+stepper.set_target_step(1000).unwrap(); // stop at step 1000
 
 // Take 99 steps
 for _ in 0..99 {

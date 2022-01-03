@@ -261,6 +261,11 @@ impl Stepgen {
         }
     }
 
+    /// If we are running at target speed
+    pub fn is_at_speed(&self) -> bool {
+        self.slewing_delay != 0
+    }
+
     /// Returns '0' if should stop. Otherwise, returns timer delay in 24.8 format
     fn next_delay(&mut self) -> u32 {
         let target_step = self.target_step;

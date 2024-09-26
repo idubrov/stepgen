@@ -29,7 +29,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
       - name: Run cargo-tarpaulin
         run: |
-          cargo binstall cargo-tarpaulin
+          cargo binstall cargo-tarpaulin --no-confirm
           cargo tarpaulin
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4

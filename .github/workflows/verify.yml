@@ -27,10 +27,13 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
-        with:
-          version: latest
-          args: '-- --test-threads 1'
+        run: | 
+          cargo binstall cargo-tarpaulin
+          cargo tarpaulin
+        # uses: actions-rs/tarpaulin@v0.1
+        # with:
+        #   version: latest
+        #   args: '-- --test-threads 1'
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4
         with:

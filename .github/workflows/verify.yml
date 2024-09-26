@@ -28,7 +28,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run cargo-tarpaulin
         run: | 
-          cargo binstall cargo-tarpaulin
+          cargo install cargo-tarpaulin
           cargo tarpaulin
         # uses: actions-rs/tarpaulin@v0.1
         # with:

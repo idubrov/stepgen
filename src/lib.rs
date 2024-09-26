@@ -177,8 +177,8 @@ impl Stepgen {
     /// If speed or acceleration are not set, returns an error `Error::SpeedAccelerationNotSet`.
     ///
     /// # Notes
-    /// 1. Steps could only go in positive direction. Therefore, setting target step to 0 wil
-    /// always force step generation to decelerate and stop.
+    /// 1. Steps could only go in positive direction. Therefore, setting target step to 0 will
+    ///    always force step generation to decelerate and stop.
     pub fn set_target_step(&mut self, target_step: u32) -> Result {
         if self.target_delay == 0 || self.first_delay == 0 {
             return Err(Error::SpeedAccelerationNotSet);

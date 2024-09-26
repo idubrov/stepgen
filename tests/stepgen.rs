@@ -21,7 +21,7 @@ fn test() {
 
         let params: Vec<u32> = file_name.split('_').map(|e| e.parse().unwrap()).collect();
 
-        let target_step = *params.get(0).unwrap_or(&1u32);
+        let target_step = *params.first().unwrap_or(&1u32);
         let microsteps = *params.get(1).unwrap_or(&1u32);
         let stop_at = *params.get(2).unwrap_or(&std::u32::MAX);
 

@@ -13,13 +13,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # - uses: actions-rs/toolchain@v1
-      #   with:
-      #     profile: minimal
-      #     toolchain: stable
-      #     components: rustfmt, clippy
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
       - name: Annotate commit with clippy warnings
-        uses: actions-rs/clippy-check@v1
+        uses: auguwu/clippy-action@1.4.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features -- --deny warnings
@@ -27,14 +25,12 @@ jobs:
         uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cargo binstall
+        uses: cargo-bins/cargo-binstall@main
       - name: Run cargo-tarpaulin
         run: |
-          cargo install cargo-tarpaulin
+          cargo binstall cargo-tarpaulin
           cargo tarpaulin
-        # uses: actions-rs/tarpaulin@v0.1
-        # with:
-        #   version: latest
-        #   args: '-- --test-threads 1'
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v4
         with:

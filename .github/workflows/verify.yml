@@ -12,11 +12,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: rustfmt, clippy
+      - uses: dtolnay/rust-toolchain@stable
+      # - uses: actions-rs/toolchain@v1
+      #   with:
+      #     profile: minimal
+      #     toolchain: stable
+      #     components: rustfmt, clippy
       - name: Annotate commit with clippy warnings
         uses: actions-rs/clippy-check@v1
         with:
@@ -27,7 +28,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run cargo-tarpaulin
-        run: | 
+        run: |
           cargo install cargo-tarpaulin
           cargo tarpaulin
         # uses: actions-rs/tarpaulin@v0.1

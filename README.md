@@ -1,6 +1,6 @@
 [![crates.io](https://img.shields.io/crates/v/stepgen.svg)](https://crates.io/crates/stepgen)
 [![crates.io](https://img.shields.io/crates/d/stepgen.svg)](https://crates.io/crates/stepgen)
-[![Codecov](https://img.shields.io/codecov/c/github/idubrov/stepgen.svg)](https://codecov.io/gh/idubrov/stepgen/tree/main)
+
 
 # stepgen
 

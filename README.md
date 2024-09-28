@@ -36,7 +36,7 @@ assert_eq!(2242, (stepper.next().unwrap() + 128) >> 8); // delay for 100th step,
 In few APIs, stepgen keeps numbers as fixed-point numbers, using least significant 8 bits
 for the fractional part and the remaining bits for the integral part.
 
-[1]: http://www.embedded.com/design/mcus-processors-and-socs/4006438/Generate-stepper-motor-speed-profiles-in-real-time
+[1]: https://web.archive.org/web/20240514211308/https://www.embedded.com/generate-stepper-motor-speed-profiles-in-real-time/
 
 ## License
 
